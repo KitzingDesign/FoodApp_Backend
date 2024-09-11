@@ -13,16 +13,14 @@ const sequelize = new Sequelize(
   }
 );
 
-//Tests connection to DB
-const testConnection = async () => {
+// Test the connection
+const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log("DATABASE CONNECTED");
-  } catch (err) {
-    console.error("DATABASE CONNECTION ERROR:", err);
+    console.log("Connected to MySQL with Sequelize");
+  } catch (error) {
+    console.error("Unable to connect to MySQL:", error);
   }
 };
 
-testConnection();
-
-module.exports = sequelize;
+module.exports = { sequelize, connectDB };

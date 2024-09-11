@@ -1,35 +1,45 @@
-const express = require("express");
 require("dotenv").config();
-const connectDB = require("./config/db"); // Import MySQL connection
-const corsMiddleware = require("./middlewear/corsMiddlewear");
-const cookieParser = require("cookie-parser");
-
-connectDB;
-
+require("express-async-errors");
+const express = require("express");
 const app = express();
-
-//middleware
-app.use(express.json());
-
-// middleware for cookies
-app.use(cookieParser());
-
-//Built in middleware to handle urlencoded form data
-app.use(express.urlencoded({ extended: false }));
-
-// Cors middleware
-app.use(corsMiddleware);
-
-//Routes
-app.use("/login", require("./routes/auth"));
-app.use("/register", require("./routes/register"));
-app.use("/refresh", require("./routes/refresh"));
-
+const path = require("path");
+const errorHandler = require("./middleware/errorHandler");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const corsOptions = require("./config/corsOptions");
+const { sequelize, connectDB } = require("./config/db");
 const PORT = process.env.PORT || 3500;
-app.get("/test", (req, res) => {
-  res.json("It works!");
+
+// Log the environment
+console.log(process.env.NODE_ENV);
+
+// Connect to mySQL
+connectDB();
+
+// Middleware
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(cookieParser());
+app.use("/", express.static(path.join(__dirname, "public")));
+
+// Routes
+app.use("/", require("./routes/root"));
+app.use("/auth", require("./routes/authRoutes"));
+app.use("/user", require("./routes/userRoutes"));
+
+app.all("*", (req, res) => {
+  res.status(404);
+  if (req.accepts("html")) {
+    res.sendFile(path.join(__dirname, "views", "404.html"));
+  } else if (req.accepts("json")) {
+    res.json({ message: "404 Not Found" });
+  } else {
+    res.type("txt").send("404 Not Found");
+  }
 });
 
-app.listen(PORT, () => {
-  console.log(`connected server is running on ${PORT}`);
-});
+// Error handler with middleware
+app.use(errorHandler);
+
+// Start the server
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
