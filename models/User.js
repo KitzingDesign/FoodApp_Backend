@@ -55,6 +55,10 @@ const User = sequelize.define(
       defaultValue: "user", // Default value
       field: "role", // Maps to the column name in the database
     },
+    refreshToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     timestamps: false, // We manage created_at manually
