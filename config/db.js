@@ -1,5 +1,4 @@
 const { Sequelize } = require("sequelize");
-const mysql = require("mysql2");
 
 //Sets up connection with Sequalize
 const sequelize = new Sequelize(

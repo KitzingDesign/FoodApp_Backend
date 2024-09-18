@@ -16,12 +16,14 @@ const login = async (req, res) => {
   const foundUser = await User.findOne({ where: { email: email } });
 
   if (!foundUser) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.sendStatus(401);
   }
 
   const match = await bcrypt.compare(password, foundUser.password);
 
-  if (!match) return res.status(401).json({ message: "Unauthorized" });
+  if (!match) {
+    return res.sendStatus(401);
+  }
 
   const accessToken = jwt.sign(
     {
