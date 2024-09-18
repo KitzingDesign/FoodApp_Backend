@@ -6,11 +6,7 @@ const verifyJWT = require("../middleware/verifyJWT");
 
 // Create a new recipe (Authenticated route)
 router.post("/create", verifyJWT, recipeController.createRecipe);
-
-// Get all recipes for a specific user
-router.get("/user/:userId", recipeController.getRecipesByUser);
-
-// Get a specific recipe
-router.get("/:id", recipeController.getRecipeById);
+router.patch("/", recipeController.updateRecipe); // Route to update a recipe
+router.delete("/", recipeController.deleteRecipe); // Route to delete a recipe
 
 module.exports = router;
