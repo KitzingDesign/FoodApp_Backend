@@ -19,6 +19,16 @@ const Recipe = sequelize.define(
       },
       field: "user_id",
     },
+    collection_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "collections",
+        key: "collection_id",
+      },
+      onDelete: "SET NULL",
+      field: "collection_id",
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,

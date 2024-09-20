@@ -2,6 +2,38 @@
 const Recipe = require("../models/Recipe"); // Your Recipe model
 const User = require("../models/User"); // Your User model
 
+// Get all recipes for a user
+exports.getAllRecipes = async (req, res) => {
+  const { user_id } = req.query;
+  console.log("hej");
+
+  // Validate request
+  if (!user_id) {
+    return res.status(400).json({ message: "User ID is required." });
+  }
+
+  try {
+    const recipes = await Recipe.findAll({
+      where: { user_id },
+    });
+
+    console.log(recipes);
+
+    // Convert the result to plain JSON
+    const plainRecipes = recipes.map((recipe) => recipe.get({ plain: true }));
+
+    if (!recipes.length) {
+      return res
+        .status(404)
+        .json({ message: "No recipes found for this user" });
+    }
+
+    res.status(200).json(plainRecipes);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Create new recipe for user
 exports.createRecipe = async (req, res) => {
   const { title, description, instructions, image_url, user_id } = req.body;

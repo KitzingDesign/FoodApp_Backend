@@ -27,6 +27,7 @@ app.use("/", require("./routes/root"));
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/user", require("./routes/userRoutes"));
 app.use("/recipe", require("./routes/recipeRoutes"));
+app.use("/collection", require("./routes/collectionRoutes"));
 
 app.all("*", (req, res) => {
   res.status(404);

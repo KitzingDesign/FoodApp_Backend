@@ -8,6 +8,6 @@ router.post("/", usersController.createNewUser);
 
 router.use(verifyJWT);
 
-router.route("/").get(usersController.getAllUsers);
+router.route("/:userId").get(usersController.getUser);
 
 module.exports = router;

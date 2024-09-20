@@ -5,19 +5,32 @@ const bcrypt = require("bcrypt");
 // @desc Get all users
 // @route GET /users
 // @access Private
-const getAllUsers = async (req, res) => {
-  // Get all users from mySQL
-  const users = await User.findAll({
-    attributes: { exclude: ["password"] },
-    raw: true,
-  });
+const getUser = async (req, res) => {
+  const { userId } = req.params;
 
-  // If no users
-  if (!users?.length) {
-    return res.status(400).json({ message: "No users found" });
+  // Validate the user_id
+  if (!userId) {
+    return res.status(400).json({ message: "User ID is required" });
   }
+  try {
+    // Fetch the user with the given user_id
+    const user = await User.findOne({
+      where: { user_id: userId },
+      attributes: { exclude: ["password"] },
+      raw: true,
+    });
 
-  res.json(users);
+    // If no user found
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Respond with the user data
+    res.json(user);
+  } catch (err) {
+    // Handle any errors that occurred during the query
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // @desc Create new user
@@ -64,6 +77,6 @@ const createNewUser = async (req, res) => {
 };
 
 module.exports = {
-  getAllUsers,
+  getUser,
   createNewUser,
 };
