@@ -1,11 +1,11 @@
 // controllers/recipeController.js
 const Recipe = require("../models/Recipe"); // Your Recipe model
 const User = require("../models/User"); // Your User model
+const { scrapeRecipe } = require("../services/recipeScraper");
 
 // Get all recipes for a user
 exports.getAllRecipes = async (req, res) => {
   const { user_id } = req.query;
-  console.log("hej");
 
   // Validate request
   if (!user_id) {
@@ -16,8 +16,6 @@ exports.getAllRecipes = async (req, res) => {
     const recipes = await Recipe.findAll({
       where: { user_id },
     });
-
-    console.log(recipes);
 
     // Convert the result to plain JSON
     const plainRecipes = recipes.map((recipe) => recipe.get({ plain: true }));
@@ -36,7 +34,7 @@ exports.getAllRecipes = async (req, res) => {
 
 // Create new recipe for user
 exports.createRecipe = async (req, res) => {
-  const { title, description, instructions, image_url, user_id } = req.body;
+  const { title, description, image_url, user_id } = req.body;
 
   // Confirm data
   if (!title) {
@@ -48,7 +46,6 @@ exports.createRecipe = async (req, res) => {
       user_id,
       title,
       description,
-      instructions,
       image_url,
     };
     const newRecipe = await Recipe.create(recipeObject); // Create the new recipe
@@ -62,7 +59,7 @@ exports.createRecipe = async (req, res) => {
 // @route PATCH /recipes
 // @access Private
 exports.updateRecipe = async (req, res) => {
-  const { title, description, instructions, image_url, id } = req.body;
+  const { title, description, image_url, id } = req.body;
 
   // Confirm data
   if (!title) {
@@ -80,7 +77,6 @@ exports.updateRecipe = async (req, res) => {
     // Update recipe details
     recipe.title = title;
     recipe.description = description;
-    recipe.instructions = instructions;
     recipe.image_url = image_url;
 
     // Save updated recipe
@@ -126,5 +122,24 @@ exports.deleteRecipe = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc get a recipe from url
+// @route GET /recipes
+// @access Private
+exports.getUrlRecipe = async (req, res) => {
+  const { url } = req.query;
+
+  // Check if URL was provided
+  if (!url) {
+    return res.status(400).json({ message: "Recipe URL is required" });
+  }
+
+  try {
+    const recipe = await scrapeRecipe(url);
+    res.json(recipe);
+  } catch (error) {
+    res.status(500).json({ message: error });
   }
 };
