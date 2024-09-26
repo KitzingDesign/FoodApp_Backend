@@ -11,4 +11,6 @@ router.delete("/", recipeController.deleteRecipe); // Route to delete a recipe
 router.get("/", recipeController.getAllRecipes); // Route to get all recipes
 router.get("/url", recipeController.getUrlRecipe); // Route to get recipe from url
 
+router.get("/:id", recipeController.getOneRecipe); // Route to get all recipes
+
 module.exports = router;

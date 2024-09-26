@@ -39,7 +39,6 @@ const Recipe = sequelize.define(
       allowNull: true,
       field: "description",
     },
-
     image_url: {
       type: DataTypes.STRING,
       allowNull: true,

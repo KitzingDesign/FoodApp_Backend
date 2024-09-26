@@ -15,6 +15,7 @@ exports.getAllRecipes = async (req, res) => {
   try {
     const recipes = await Recipe.findAll({
       where: { user_id },
+      order: [["created_at", "DESC"]],
     });
 
     // Convert the result to plain JSON
@@ -32,9 +33,38 @@ exports.getAllRecipes = async (req, res) => {
   }
 };
 
+// Get one recipe by ID and user ID
+exports.getOneRecipe = async (req, res) => {
+  const { id } = req.params; // Get recipe ID from the URL
+
+  // Validate input
+  if (!id) {
+    return res
+      .status(400)
+      .json({ message: "Recipe ID and User ID are required." });
+  }
+
+  try {
+    const recipe = await Recipe.findOne({
+      where: {
+        recipe_id: id,
+      },
+    });
+
+    if (!recipe) {
+      return res.status(404).json({ message: "Recipe not found." });
+    }
+
+    // Convert to plain JSON if using Sequelize
+    res.status(200).json(recipe.get({ plain: true }));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Create new recipe for user
 exports.createRecipe = async (req, res) => {
-  const { title, description, image_url, user_id } = req.body;
+  const { title, description, image_url, user_id, collection_id } = req.body;
 
   // Confirm data
   if (!title) {
@@ -42,14 +72,21 @@ exports.createRecipe = async (req, res) => {
   }
 
   try {
-    const recipeObject = {
-      user_id,
-      title,
-      description,
-      image_url,
-    };
+    const recipeObject = Number(collection_id)
+      ? {
+          user_id,
+          title,
+          description,
+          image_url,
+          collection_id,
+        }
+      : { user_id, title, description, image_url };
     const newRecipe = await Recipe.create(recipeObject); // Create the new recipe
-    res.status(201).json({ message: `New recipe ${newRecipe.title} created` });
+    res.status(201).json({
+      message: `New recipe ${newRecipe.title} created`,
+      recipe_id: newRecipe.recipe_id,
+      recipe: newRecipe,
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -95,17 +132,17 @@ exports.updateRecipe = async (req, res) => {
 // @route DELETE /recipes
 // @access Private
 exports.deleteRecipe = async (req, res) => {
-  const { id } = req.body;
+  const { recipe_id } = req.query;
 
   // Confirm data
-  if (!id) {
+  if (!recipe_id) {
     return res.status(400).json({ message: "Recipe ID required" });
   }
 
   try {
     // Confirm recipe exists to delete
     const recipe = Recipe.findOne({
-      where: { recipe_id: id },
+      where: { recipe_id },
     });
 
     if (!recipe) {
@@ -114,11 +151,11 @@ exports.deleteRecipe = async (req, res) => {
 
     // Delete recipe
     await Recipe.destroy({
-      where: { recipe_id: id },
+      where: { recipe_id },
     });
 
     res.status(200).json({
-      message: `Recipe '${recipe.title}' with ID ${recipe.id} deleted`,
+      message: `Recipe deleted`,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

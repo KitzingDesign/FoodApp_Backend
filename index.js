@@ -28,6 +28,8 @@ app.use("/auth", require("./routes/authRoutes"));
 app.use("/user", require("./routes/userRoutes"));
 app.use("/recipe", require("./routes/recipeRoutes"));
 app.use("/collection", require("./routes/collectionRoutes"));
+app.use("/instruction", require("./routes/instructionRoutes"));
+app.use("/ingredient", require("./routes/ingredientRoutes"));
 
 app.all("*", (req, res) => {
   res.status(404);
