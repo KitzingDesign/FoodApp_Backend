@@ -13,6 +13,10 @@ router.post("/", collectionController.createCollection);
 // @desc Get all collections for a user (using query parameter user_id)
 router.get("/", collectionController.getCollections);
 
+// @route GET /collection/{id}
+// @desc Get one collections for a user (using query parameter user_id)
+router.get("/:id", collectionController.getOneCollection);
+
 // @route PATCH /collection/
 // @desc Update a collection by ID
 router.patch("/", collectionController.updateCollection); // params or not?

@@ -61,6 +61,34 @@ exports.getCollections = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+// Get one recipe by ID and user ID
+exports.getOneCollection = async (req, res) => {
+  const { id } = req.params; // Get recipe ID from the URL
+
+  // Validate input
+  if (!id) {
+    return res
+      .status(400)
+      .json({ message: "Recipe ID and User ID are required." });
+  }
+
+  try {
+    const collection = await Collection.findOne({
+      where: {
+        collection_id: id,
+      },
+    });
+
+    if (!collection) {
+      return res.status(404).json({ message: "Collection not found." });
+    }
+
+    // Convert to plain JSON if using Sequelize
+    res.status(200).json(collection.get({ plain: true }));
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
 // @desc Update a collection
 // @route PATCH /collections/:id
@@ -100,11 +128,11 @@ exports.updateCollection = async (req, res) => {
 // @route DELETE /collections/:id
 // @access Private
 exports.deleteCollection = async (req, res) => {
-  const { id } = req.body; // Maybe change to req body
+  const { collection_id } = req.query; // Maybe change to req body
 
   try {
     // Find the collection by its ID
-    const collection = await Collection.findByPk(id);
+    const collection = await Collection.findByPk(collection_id);
 
     if (!collection) {
       return res.status(404).json({ message: "Collection not found." });
