@@ -3,6 +3,9 @@ const Recipe = require("../models/Recipe"); // Your Recipe model
 const User = require("../models/User"); // Your User model
 const { scrapeRecipe } = require("../services/recipeScraper");
 
+// Import the upload middleware
+const upload = require("../middleware/upload");
+
 // Get all recipes for a user
 exports.getAllRecipes = async (req, res) => {
   const { user_id } = req.query;
@@ -64,32 +67,48 @@ exports.getOneRecipe = async (req, res) => {
 
 // Create new recipe for user
 exports.createRecipe = async (req, res) => {
-  const { title, description, image_url, user_id, collection_id } = req.body;
+  // Use multer's upload middleware here
+  upload.single("image")(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
 
-  // Confirm data
-  if (!title) {
-    return res.status(400).json({ message: "Title are required" });
-  }
+    const { title, description, user_id, collection_id } = req.body;
+    let image_url = null;
 
-  try {
-    const recipeObject = Number(collection_id)
-      ? {
-          user_id,
-          title,
-          description,
-          image_url,
-          collection_id,
-        }
-      : { user_id, title, description, image_url };
-    const newRecipe = await Recipe.create(recipeObject); // Create the new recipe
-    res.status(201).json({
-      message: `New recipe ${newRecipe.title} created`,
-      recipe_id: newRecipe.recipe_id,
-      recipe: newRecipe,
-    });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+    // Confirm data
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    // If an image was uploaded, use the Cloudinary URL
+    if (req.file) {
+      image_url = req.file.path; // This is the Cloudinary URL from multer
+    } else {
+      image_url = req.body.image_url; // Use the URL from the form
+    }
+    console.log("Image URL:", image_url);
+
+    try {
+      const recipeObject = Number(collection_id)
+        ? {
+            user_id,
+            title,
+            description,
+            image_url,
+            collection_id,
+          }
+        : { user_id, title, description, image_url };
+      const newRecipe = await Recipe.create(recipeObject); // Create the new recipe
+      res.status(201).json({
+        message: `New recipe ${newRecipe.title} created`,
+        recipe_id: newRecipe.recipe_id,
+        recipe: newRecipe,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
 };
 
 // @desc Update a recipe

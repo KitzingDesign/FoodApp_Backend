@@ -27,6 +27,8 @@ const getInstructionsByRecipe = async (req, res) => {
 // Add a new instruction to a specific recipe
 const addInstruction = async (req, res) => {
   //   const { recipe_id } = req.query;
+  console.log("Request body:", req.body); // Log the incoming request body
+
   const { step_number, instruction_text, recipe_id } = req.body;
 
   if (step_number === null || !instruction_text) {
