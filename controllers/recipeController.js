@@ -3,9 +3,6 @@ const Recipe = require("../models/Recipe"); // Your Recipe model
 const User = require("../models/User"); // Your User model
 const { scrapeRecipe } = require("../services/recipeScraper");
 
-// Import the upload middleware
-const upload = require("../middleware/upload");
-
 // Get all recipes for a user
 exports.getAllRecipes = async (req, res) => {
   const { user_id } = req.query;
@@ -67,48 +64,52 @@ exports.getOneRecipe = async (req, res) => {
 
 // Create new recipe for user
 exports.createRecipe = async (req, res) => {
-  // Use multer's upload middleware here
-  upload.single("image")(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+  // Use multer's upload middleware to handle the image upload
+  console.log("Request body:", req.body); // Log the incoming request body
 
-    const { title, description, user_id, collection_id } = req.body;
-    let image_url = null;
+  // Extract data from request body
+  const { title, description, user_id, collection_id, image_url } = req.body;
 
-    // Confirm data
-    if (!title) {
-      return res.status(400).json({ message: "Title is required" });
-    }
+  // Validate required fields
+  if (!title) {
+    return res.status(400).json({ message: "Title is required" });
+  }
 
-    // If an image was uploaded, use the Cloudinary URL
-    if (req.file) {
-      image_url = req.file.path; // This is the Cloudinary URL from multer
-    } else {
-      image_url = req.body.image_url; // Use the URL from the form
-    }
-    console.log("Image URL:", image_url);
+  if (!user_id) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
 
-    try {
-      const recipeObject = Number(collection_id)
-        ? {
-            user_id,
-            title,
-            description,
-            image_url,
-            collection_id,
-          }
-        : { user_id, title, description, image_url };
-      const newRecipe = await Recipe.create(recipeObject); // Create the new recipe
-      res.status(201).json({
-        message: `New recipe ${newRecipe.title} created`,
-        recipe_id: newRecipe.recipe_id,
-        recipe: newRecipe,
-      });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
-  });
+  let imageUrl = image_url;
+
+  // If an image was uploaded, use the Cloudinary URL
+  if (req.file) {
+    imageUrl = req.file.path || image_url; // This is the Cloudinary URL from multer
+  }
+
+  try {
+    console.log("Creating new recipe...");
+    // Construct recipe object
+    const recipeObject = {
+      user_id: Number(user_id),
+      title,
+      description,
+      image_url: imageUrl,
+      ...(collection_id && { collection_id }), // Add collection_id if it's provided
+    };
+
+    // Create new recipe in the database
+    const newRecipe = await Recipe.create(recipeObject);
+
+    // Return success response
+    res.status(201).json({
+      message: `New recipe '${newRecipe.title}' created`,
+      recipe_id: newRecipe.recipe_id,
+      recipe: newRecipe,
+    });
+  } catch (err) {
+    // Handle errors
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // @desc Update a recipe

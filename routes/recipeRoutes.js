@@ -3,9 +3,15 @@ const express = require("express");
 const router = express.Router();
 const recipeController = require("../controllers/recipeController");
 const verifyJWT = require("../middleware/verifyJWT");
+const upload = require("../middleware/upload");
 
 // Create a new recipe with an image (Authenticated route)
-router.post("/create", verifyJWT, recipeController.createRecipe);
+router.post(
+  "/create",
+  verifyJWT,
+  upload.single("image"),
+  recipeController.createRecipe
+);
 
 // Update a recipe with a new image (if provided)
 router.patch("/", verifyJWT, recipeController.updateRecipe);

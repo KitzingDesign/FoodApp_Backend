@@ -54,8 +54,6 @@ exports.getCollections = async (req, res) => {
       collection.get({ plain: true })
     );
 
-    console.log(plainCollections);
-
     res.json(plainCollections);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -128,11 +126,11 @@ exports.updateCollection = async (req, res) => {
 // @route DELETE /collections/:id
 // @access Private
 exports.deleteCollection = async (req, res) => {
-  const { collection_id } = req.query; // Maybe change to req body
+  const { id } = req.params; // Maybe change to req body
 
   try {
     // Find the collection by its ID
-    const collection = await Collection.findByPk(collection_id);
+    const collection = await Collection.findByPk(id);
 
     if (!collection) {
       return res.status(404).json({ message: "Collection not found." });

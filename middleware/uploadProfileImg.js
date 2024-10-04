@@ -7,8 +7,8 @@ const multer = require("multer");
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "recipes", // Folder name in Cloudinary where images will be stored
-    allowed_formats: ["jpg", "png", "jpeg"], // Allowed image formats
+    folder: "users", // Folder name in Cloudinary where images will be stored
+    allowed_formats: ["jpg", "png", "jpeg", "svg"], // Allowed image formats
   },
 });
 

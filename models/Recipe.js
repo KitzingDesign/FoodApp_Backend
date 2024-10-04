@@ -14,9 +14,10 @@ const Recipe = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "users",
+        model: "users", // Make sure this matches your user model/table name
         key: "user_id",
       },
+      onDelete: "CASCADE", // This will ensure recipes are deleted when the user is deleted
       field: "user_id",
     },
     collection_id: {

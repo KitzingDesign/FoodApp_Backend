@@ -121,8 +121,36 @@ const logout = async (req, res) => {
   res.json({ message: "Cookie cleared" });
 };
 
+// @desc Delete a user
+// @route DELETE /auth/:userId
+// @access Private (you should implement authentication middleware to protect this route)
+const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Optionally, you can check if the user exists before deletion
+    const user = await User.findOne({ where: { user_id: userId } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Delete the user
+    await User.destroy({ where: { user_id: userId } });
+
+    // Optionally, also delete associated collections if you have a cascading delete strategy
+    // await Collection.destroy({ where: { user_id: userId } });
+
+    res.status(204).send(); // No Content response
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   login,
   refresh,
   logout,
+  deleteUser,
 };
