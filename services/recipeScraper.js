@@ -1,5 +1,6 @@
 const https = require("https");
 const cheerio = require("cheerio");
+const recipeDataScraper = require("recipe-data-scraper");
 
 // Function to extract JSON-LD data from the HTML
 function extractJsonLD(html) {
@@ -17,8 +18,8 @@ function extractJsonLD(html) {
   return null;
 }
 
-// Function to scrape the recipe from a URL
-function scrapeRecipe(url) {
+// Function to scrape the recipe from a URL using your custom scraper
+function myScrapeRecipe(url) {
   return new Promise((resolve, reject) => {
     https
       .get(url, (res) => {
@@ -50,6 +51,24 @@ function scrapeRecipe(url) {
         reject(`Error fetching the recipe: ${error.message}`);
       });
   });
+}
+
+// Unified scraping function that first tries your custom scraper and then falls back to recipe-data-scraper
+async function scrapeRecipe(url) {
+  try {
+    // First, try to scrape using your custom method
+    const recipe = await myScrapeRecipe(url);
+    return recipe;
+  } catch (error) {
+    console.warn("Custom scraper failed:", error.message);
+    // Fallback to recipe-data-scraper
+    try {
+      const recipe = await recipeDataScraper(url);
+      return recipe;
+    } catch (err) {
+      throw new Error("Could not find recipe data from both sources.");
+    }
+  }
 }
 
 module.exports = { scrapeRecipe };

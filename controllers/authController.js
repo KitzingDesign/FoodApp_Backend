@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const admin = require("firebase-admin");
 
 // Helper function to create tokens
 const createToken = (user) => {
@@ -12,7 +13,7 @@ const createToken = (user) => {
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: "15min" }
   );
 };
 
@@ -20,24 +21,23 @@ const createToken = (user) => {
 // @route POST /auth
 // @access Public
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { firebaseToken } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "All fields are required" });
+  if (!firebaseToken) {
+    return res.status(400).json({ message: "Firebase token is required" });
   }
 
   try {
-    // Find the user by email
-    const foundUser = await User.findOne({ where: { email: email } });
-    if (!foundUser) {
-      return res.status(401).json({ message: "Wrong username or password" });
-    }
+    // // Find the user by email
+    // const foundUser = await User.findOne({ where: { email: email } });
+    // if (!foundUser) {
+    //   return res.status(401).json({ message: "Wrong username or password" });
+    // }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, foundUser.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
+    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+
+    // Check if user exists in your database
+    let foundUser = await User.findOne({ where: { uid: decodedToken.uid } });
 
     // Create Access Token
     const accessToken = createToken(foundUser);
@@ -58,7 +58,70 @@ const login = async (req, res) => {
     });
 
     // Return Access Token
-    res.json({ accessToken });
+    res.json({
+      accessToken,
+      user: { email: foundUser.email, user_id: foundUser.user_id },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const googleLogin = async (req, res) => {
+  const { firebaseToken } = req.body;
+
+  if (!firebaseToken) {
+    return res.status(400).json({ message: "Firebase token is required" });
+  }
+
+  try {
+    // Verify the Firebase token
+    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+    const { uid, email, picture, name } = decodedToken; // Extract uid and email from decoded token
+    console.log("Decoded token:", decodedToken);
+
+    // Check if the user exists in your database
+    let foundUser = await User.findOne({ where: { uid } });
+
+    // If the user does not exist, create a new user
+    if (!foundUser) {
+      foundUser = await User.create({
+        uid, // Store the Firebase uid
+        email, // Use email from the decoded token
+        // You can store other user details as needed, e.g., displayName, etc.
+        profile_picture: picture || null,
+        first_name: name.split(" ")[0] || null,
+        last_name: name.split(" ")[1] || null,
+      });
+    }
+
+    // Create JWT Access Token
+    const accessToken = createToken(foundUser);
+
+    // Create JWT Refresh Token
+    const refreshToken = jwt.sign(
+      { email: foundUser.email },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "7d" } // Refresh token lasts for 7 days
+    );
+
+    // Set Secure Cookie with Refresh Token
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true, // Prevent access via JavaScript
+      secure: process.env.NODE_ENV === "production", // Only send cookie over HTTPS in production
+      sameSite: "Lax", // Cookie is sent only on same-site requests
+      maxAge: 7 * 24 * 60 * 60 * 1000, // Set cookie to expire in 7 days
+    });
+
+    // Return Access Token and user details to client
+    res.json({
+      accessToken,
+      user: {
+        email: foundUser.email,
+        user_id: foundUser.user_id,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -85,7 +148,11 @@ const refresh = async (req, res) => {
     const accessToken = createToken(foundUser);
 
     // Return new Access Token
-    res.json({ accessToken });
+    res.json({
+      token: accessToken,
+      user_id: foundUser.user_id,
+      email: foundUser.email,
+    });
   } catch (error) {
     console.error(error);
     return res.status(403).json({ message: "Forbidden" });
@@ -115,6 +182,9 @@ const deleteUser = async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Delete the user from Firebase Authentication
+    await admin.auth().deleteUser(user.uid); // Use the Firebase UID or email here
+
     // Delete the user
     await User.destroy({ where: { user_id: userId } });
     res.status(204).send(); // No Content response
@@ -126,6 +196,7 @@ const deleteUser = async (req, res) => {
 
 module.exports = {
   login,
+  googleLogin,
   refresh,
   logout,
   deleteUser,

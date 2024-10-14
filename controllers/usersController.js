@@ -1,6 +1,23 @@
 const { sequelize } = require("../config/db");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+const admin = require("../config/firebase");
+
+// Helper function to create tokens
+const createToken = (user) => {
+  return jwt.sign(
+    {
+      UserInfo: {
+        email: user.email,
+        user_id: user.user_id,
+      },
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "15m" }
+  );
+};
 
 // @desc Get all users
 // @route GET /users
@@ -16,7 +33,6 @@ const getUser = async (req, res) => {
     // Fetch the user with the given user_id
     const user = await User.findOne({
       where: { user_id: userId },
-      attributes: { exclude: ["password"] },
       raw: true,
     });
 
@@ -37,41 +53,65 @@ const getUser = async (req, res) => {
 // @route POST /users
 // @access Private
 const createNewUser = async (req, res) => {
-  const { first_name, last_name, password, email } = req.body;
-
-  // Confirm data
-  if (!first_name || !last_name || !email || !password) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
+  const { firebaseToken, first_name, last_name } = req.body;
 
   try {
-    // Check for duplicate email
-    const duplicate = await User.findOne({
-      where: sequelize.where(
-        sequelize.fn("LOWER", sequelize.col("email")), // Convert email column to lowercase
-        email.toLowerCase() // Compare with lowercase email
-      ),
-      raw: true,
-    });
+    // Verify the Firebase token
+    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+    console.log("Decoded token:", decodedToken);
+    const uid = decodedToken.uid;
 
-    if (duplicate) {
-      return res.status(409).json({ message: "Duplicate email" });
+    // Check if the user already exists
+    let user = await User.findOne({ where: { uid: uid } });
+
+    if (user) {
+      return res.status(409).json({ message: "User already exists" });
     }
 
-    // Hash password
-    const hashedPwd = await bcrypt.hash(password, 12); // salt rounds
-
-    // Create the userObject without handling roles
-    const userObject = { email, first_name, last_name, password: hashedPwd };
+    // Create the user object without handling roles
+    const userObject = {
+      email: decodedToken.email,
+      first_name:
+        first_name.charAt(0).toUpperCase() +
+          first_name.slice(1).toLowerCase() || "N/A",
+      last_name:
+        last_name.charAt(0).toUpperCase() + last_name.slice(1).toLowerCase() ||
+        "N/A",
+      uid,
+    };
 
     // Create and store the new user in the database
-    const user = await User.create(userObject);
-    console.log("User created successfully:", user);
+    const createdUser = await User.create(userObject);
+
+    // Create Access Token
+    const accessToken = createToken(createdUser);
+
+    // Create Refresh Token
+    const refreshToken = jwt.sign(
+      { email: createdUser.email },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "7d" } // Set for 7 days
+    );
+
+    // Set Secure Cookie with Refresh Token
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // cookie expiry: 7 days
+    });
 
     // Respond with success
-    res.status(201).json({ message: `New user ${user.email} created` });
+    res.status(201).json({
+      accessToken,
+      user: { email: createdUser.email, user_id: createdUser.user_id },
+    });
   } catch (error) {
     console.error("Error creating user:", error);
+    // Provide a more specific error message if needed
+    if (error.code === "auth/id-token-expired") {
+      return res.status(401).json({ message: "Firebase token has expired" });
+    }
     res.status(500).json({ message: "Internal server error" });
   }
 };

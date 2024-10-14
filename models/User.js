@@ -11,14 +11,19 @@ const User = sequelize.define(
       primaryKey: true,
       field: "user_id",
     },
+    uid: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
     first_name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
+      allowNull: true,
       field: "first_name",
     },
     last_name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
+      allowNull: true,
       field: "last_name",
     },
     email: {
@@ -27,22 +32,13 @@ const User = sequelize.define(
       unique: true,
       field: "email",
     },
-    password: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-      field: "password",
-    },
+
     profile_picture: {
       type: DataTypes.STRING(255),
       allowNull: true, // Nullable
       field: "profile_picture", // Maps to the column name in the database
     },
-    //Added to be able to include google login in the future
-    google_id: {
-      type: DataTypes.STRING(255),
-      allowNull: true, // Assuming google_id is nullable
-      field: "google_id", // Maps to the column name in the database
-    },
+
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -54,10 +50,6 @@ const User = sequelize.define(
       allowNull: false,
       defaultValue: "user", // Default value
       field: "role", // Maps to the column name in the database
-    },
-    refreshToken: {
-      type: DataTypes.STRING,
-      allowNull: true,
     },
   },
   {
