@@ -2,6 +2,9 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const admin = require("firebase-admin");
+const cloudinary = require("../config/cloudinaryConfig");
+
+const extractPublicImgId = require("../middleware/extractPublicImgId");
 
 // Helper function to create tokens
 const createToken = (user) => {
@@ -174,19 +177,62 @@ const logout = async (req, res) => {
 // @desc Delete a user
 // @route DELETE /auth/:userId
 // @access Private (you should implement authentication middleware to protect this route)
+// @desc Delete a user
+// @route DELETE /auth/:userId
+// @access Private (you should implement authentication middleware to protect this route)
 const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
+    // Find the user in the database
     const user = await User.findOne({ where: { user_id: userId } });
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Extract the image URL (if the user has one)
+    const imageUrl = user.image_url;
+
+    // Attempt to delete the user's folder from Cloudinary (recipes/user_id)
+    try {
+      await cloudinary.api.delete_resources_by_prefix(
+        `users/${userId}/`,
+        function (result) {
+          console.log(result);
+        }
+      );
+      await cloudinary.api.delete_folder(`users/${userId}`); // Delete the folder after the images are gone
+    } catch (cloudinaryError) {
+      console.log(
+        `Cloudinary folder deletion failed: ${cloudinaryError.message}`
+      );
+      // Continue without failing if the folder doesn't exist
+    }
+
+    // Attempt to delete the user's folder from Cloudinary (recipes/user_id)
+    try {
+      await cloudinary.api.delete_resources_by_prefix(
+        `recipes/${userId}/`,
+        function (result) {
+          console.log(result);
+        }
+      );
+      await cloudinary.api.delete_folder(`recipes/${userId}`); // Delete the folder after the images are gone
+    } catch (cloudinaryError) {
+      console.log(
+        `Cloudinary folder deletion failed: ${cloudinaryError.message}`
+      );
+      // Continue without failing if the folder doesn't exist
+    }
 
     // Delete the user from Firebase Authentication
-    await admin.auth().deleteUser(user.uid); // Use the Firebase UID or email here
+    await admin.auth().deleteUser(user.uid); // Delete from Firebase using their UID
 
-    // Delete the user
+    // Finally, delete the user from your database
     await User.destroy({ where: { user_id: userId } });
+
+    // Send a response indicating successful deletion
     res.status(204).send(); // No Content response
   } catch (error) {
     console.error(error);

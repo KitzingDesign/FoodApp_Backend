@@ -1,5 +1,8 @@
 // controllers/recipeController.js
 const Recipe = require("../models/Recipe"); // Your Recipe model
+const cloudinary = require("../config/cloudinaryConfig");
+const extractPublicImgId = require("../middleware/extractPublicImgId");
+
 const User = require("../models/User"); // Your User model
 const { scrapeRecipe } = require("../services/recipeScraper");
 
@@ -64,11 +67,11 @@ exports.getOneRecipe = async (req, res) => {
 
 // Create new recipe for user
 exports.createRecipe = async (req, res) => {
-  // Use multer's upload middleware to handle the image upload
-  console.log("Request body:", req.body); // Log the incoming request body
-
   // Extract data from request body
   const { title, description, user_id, collection_id, image_url } = req.body;
+  console.log("Requested body", req.body);
+
+  console.log("Requested file", req.file);
 
   // Validate required fields
   if (!title) {
@@ -116,7 +119,27 @@ exports.createRecipe = async (req, res) => {
 // @route PATCH /recipes
 // @access Private
 exports.updateRecipe = async (req, res) => {
-  const { title, description, image_url, id } = req.body;
+  // Extract data from request body
+  const { title, description, user_id, collection_id, recipe_id, image_url } =
+    req.body;
+  console.log("Requested body", req.body);
+  console.log("Requested file", req.file);
+
+  // Validate required fields
+  if (!title) {
+    return res.status(400).json({ message: "Title is required" });
+  }
+
+  if (!user_id) {
+    return res.status(400).json({ message: "User ID is required" });
+  }
+
+  let imageUrl = image_url || "";
+
+  // If an image was uploaded, use the Cloudinary URL
+  if (req.file) {
+    imageUrl = req.file.path; // This is the Cloudinary URL from multer
+  }
 
   // Confirm data
   if (!title) {
@@ -125,7 +148,7 @@ exports.updateRecipe = async (req, res) => {
 
   try {
     // Confirm recipe exists to update
-    const recipe = await Recipe.findByPk(id);
+    const recipe = await Recipe.findByPk(recipe_id);
 
     if (!recipe) {
       return res.status(404).json({ message: "Recipe not found" });
@@ -133,8 +156,9 @@ exports.updateRecipe = async (req, res) => {
 
     // Update recipe details
     recipe.title = title;
+    recipe.collection_id = collection_id === "" ? null : collection_id;
     recipe.description = description;
-    recipe.image_url = image_url;
+    recipe.image_url = imageUrl;
 
     // Save updated recipe
     const updatedRecipe = await recipe.save();
@@ -161,12 +185,23 @@ exports.deleteRecipe = async (req, res) => {
 
   try {
     // Confirm recipe exists to delete
-    const recipe = Recipe.findOne({
+    const recipe = await Recipe.findOne({
       where: { recipe_id },
     });
 
     if (!recipe) {
       return res.status(404).json({ message: "Recipe not found" });
+    }
+
+    // Extract the public ID from the image URL
+    const imageUrl = recipe.image_url; // Assuming image_url is the field where the Cloudinary URL is stored
+
+    // Extract the public ID from the image URL
+    const publicId = extractPublicImgId(imageUrl);
+
+    // Delete the image from Cloudinary
+    if (imageUrl) {
+      await cloudinary.uploader.destroy(publicId);
     }
 
     // Delete recipe

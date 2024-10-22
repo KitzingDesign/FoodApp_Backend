@@ -2,21 +2,24 @@
 const express = require("express");
 const router = express.Router();
 const recipeController = require("../controllers/recipeController");
-const verifyJWT = require("../middleware/verifyJWT");
-const upload = require("../middleware/upload");
 
+const verifyJWT = require("../middleware/verifyJWT");
+const uploadRecipeImg = require("../middleware/uploadRecipeImg");
+
+router.use(verifyJWT);
 // Create a new recipe with an image (Authenticated route)
 router.post(
   "/create",
-
-  upload.single("image"),
+  uploadRecipeImg.single("image"),
   recipeController.createRecipe
 );
 
-router.use(verifyJWT);
-
 // Update a recipe with a new image (if provided)
-router.patch("/", recipeController.updateRecipe);
+router.patch(
+  "/",
+  uploadRecipeImg.single("image"),
+  recipeController.updateRecipe
+);
 
 // Delete a recipe (Authenticated route)
 router.delete("/", recipeController.deleteRecipe);

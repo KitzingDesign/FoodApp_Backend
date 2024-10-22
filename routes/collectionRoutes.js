@@ -17,13 +17,17 @@ router.get("/", collectionController.getCollections);
 // @desc Get one collections for a user (using query parameter user_id)
 router.get("/one/:id", collectionController.getOneCollection);
 
+// @route GET /collection/one/{id}
+// @desc Get one collections for a user (using query parameter user_id)
+router.get("/one/:id", collectionController.getOneCollection);
+
 // @route PATCH /collection/
 // @desc Update a collection by ID
-router.patch("/", collectionController.updateCollection); // params or not?
+router.patch("/", collectionController.updateCollection);
 
 // @route DELETE /collection/
 // @desc Delete a collection by ID
-router.delete("/:id", collectionController.deleteCollection); // params or not?
+router.delete("/:id", collectionController.deleteCollection);
 
 // @route GET /collection/:id/recipes
 // @desc Get all recipes in a specific collection by collection ID

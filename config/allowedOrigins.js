@@ -1,5 +1,5 @@
 const allowedOrigins = [
-  "https://matmatmat.com",
+  "https://matmatmaten.com",
   "http://localhost:5173", //development origin
 ];
 
