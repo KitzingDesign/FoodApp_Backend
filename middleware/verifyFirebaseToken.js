@@ -1,5 +1,4 @@
 const admin = require("../config/firebase");
-const pool = require("../config/db"); // assuming you have a db connection pool
 const User = require("../models/User");
 
 const verifyFirebaseToken = async (req, res, next) => {

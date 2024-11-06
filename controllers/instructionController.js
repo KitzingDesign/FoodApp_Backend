@@ -1,17 +1,24 @@
 const Instruction = require("../models/Instruction");
 
+// Utility function for error handling
+const handleError = (res, error) => {
+  console.error(error);
+  return res
+    .status(500)
+    .json({ message: "Internal server error", error: error.message });
+};
+
 // Get all instructions for a specific recipe
 const getInstructionsByRecipe = async (req, res) => {
-  const { id } = req.params; // Get recipe ID from the URL
-  const recipe_id = id;
+  const { id } = req.params;
 
   try {
     const instructions = await Instruction.findAll({
-      where: { recipe_id },
+      where: { recipe_id: id },
       order: [["step_number", "ASC"]],
     });
 
-    if (instructions.length === 0) {
+    if (!instructions.length) {
       return res
         .status(404)
         .json({ message: "No instructions found for this recipe" });
@@ -20,15 +27,12 @@ const getInstructionsByRecipe = async (req, res) => {
     res.json(instructions);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    handleError(res, error);
   }
 };
 
 // Add a new instruction to a specific recipe
 const addInstruction = async (req, res) => {
-  //   const { recipe_id } = req.query;
-  console.log("Request body:", req.body); // Log the incoming request body
-
   const { step_number, instruction_text, recipe_id } = req.body;
 
   if (step_number === null || !instruction_text) {
@@ -46,8 +50,7 @@ const addInstruction = async (req, res) => {
 
     res.status(201).json(newInstruction);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    handleError(res, error);
   }
 };
 
@@ -57,21 +60,21 @@ const updateInstruction = async (req, res) => {
   const { step_number, instruction_text } = req.body;
 
   try {
-    const instruction = await Instruction.findByPk(instruction_id);
+    const existingInstruction = await Instruction.findByPk(instruction_id);
 
-    if (!instruction) {
+    if (!existingInstruction) {
       return res.status(404).json({ message: "Instruction not found" });
     }
 
-    instruction.step_number = step_number || instruction.step_number;
-    instruction.instruction_text =
-      instruction_text || instruction.instruction_text;
+    existingInstruction.step_number =
+      step_number || existingInstruction.step_number;
+    existingInstruction.instruction_text =
+      instruction_text || existingInstruction.instruction_text;
 
-    await instruction.save();
-    res.json(instruction);
+    await existingInstruction.save();
+    res.json(existingInstruction);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    handleError(res, error);
   }
 };
 
@@ -80,13 +83,13 @@ const deleteInstruction = async (req, res) => {
   const { instruction_id } = req.query;
 
   try {
-    const instruction = await Instruction.findByPk(instruction_id);
+    const existingInstruction = await Instruction.findByPk(instruction_id);
 
-    if (!instruction) {
+    if (!existingInstruction) {
       return res.status(404).json({ message: "Instruction not found" });
     }
 
-    await instruction.destroy();
+    await existingInstruction.destroy();
     res.json({ message: "Instruction deleted" });
   } catch (error) {
     console.error(error);

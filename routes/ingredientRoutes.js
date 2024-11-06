@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const ingredientController = require("../controllers/ingredientController");
+const verifyJWT = require("../middleware/verifyJWT");
+
+// Making the route private
+router.use(verifyJWT);
 
 // @route GET /ingredients
 // @desc Get all ingredients for a specific recipe

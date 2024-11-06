@@ -69,9 +69,6 @@ exports.getOneRecipe = async (req, res) => {
 exports.createRecipe = async (req, res) => {
   // Extract data from request body
   const { title, description, user_id, collection_id, image_url } = req.body;
-  console.log("Requested body", req.body);
-
-  console.log("Requested file", req.file);
 
   // Validate required fields
   if (!title) {
@@ -90,7 +87,6 @@ exports.createRecipe = async (req, res) => {
   }
 
   try {
-    console.log("Creating new recipe...");
     // Construct recipe object
     const recipeObject = {
       user_id: Number(user_id),
@@ -122,8 +118,6 @@ exports.updateRecipe = async (req, res) => {
   // Extract data from request body
   const { title, description, user_id, collection_id, recipe_id, image_url } =
     req.body;
-  console.log("Requested body", req.body);
-  console.log("Requested file", req.file);
 
   // Validate required fields
   if (!title) {

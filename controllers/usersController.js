@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 const admin = require("../config/firebase");
 
 // Helper function to create tokens
-const createToken = (user) => {
+const createToken = (user, expiresIn = "15m") => {
   return jwt.sign(
     {
       UserInfo: {
@@ -15,7 +15,7 @@ const createToken = (user) => {
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: "15m" }
+    { expiresIn: expiresIn }
   );
 };
 
@@ -49,6 +49,10 @@ const getUser = async (req, res) => {
   }
 };
 
+// normalizeName helper Function
+const normalizeName = (name) =>
+  name ? name.charAt(0).toUpperCase() + name.slice(1).toLowerCase() : "N/A";
+
 // @desc Create new user
 // @route POST /users
 // @access Private
@@ -58,7 +62,6 @@ const createNewUser = async (req, res) => {
   try {
     // Verify the Firebase token
     const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
-    console.log("Decoded token:", decodedToken);
     const uid = decodedToken.uid;
 
     // Check if the user already exists
@@ -71,12 +74,8 @@ const createNewUser = async (req, res) => {
     // Create the user object without handling roles
     const userObject = {
       email: decodedToken.email,
-      first_name:
-        first_name.charAt(0).toUpperCase() +
-          first_name.slice(1).toLowerCase() || "N/A",
-      last_name:
-        last_name.charAt(0).toUpperCase() + last_name.slice(1).toLowerCase() ||
-        "N/A",
+      first_name: normalizeName(first_name),
+      last_name: normalizeName(last_name),
       uid,
     };
 
@@ -123,9 +122,6 @@ const updateUser = async (req, res) => {
   const { first_name, last_name, profile_picture } = req.body;
   let { user_id } = req.body;
   const userId = Number(user_id);
-  console.log("Requested file", req.file);
-
-  console.log("Update user:", req.body);
 
   let imageUrl = profile_picture || "";
   // If an image was uploaded, use the Cloudinary URL

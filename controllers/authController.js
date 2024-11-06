@@ -82,7 +82,6 @@ const googleLogin = async (req, res) => {
     // Verify the Firebase token
     const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
     const { uid, email, picture, name } = decodedToken; // Extract uid and email from decoded token
-    console.log("Decoded token:", decodedToken);
 
     // Check if the user exists in your database
     let foundUser = await User.findOne({ where: { uid } });
@@ -170,7 +169,7 @@ const logout = async (req, res) => {
   if (!refreshToken) return res.sendStatus(204); // No content
 
   // Clear the cookie
-  res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
+  res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true }); //change to secure: true in production
   res.json({ message: "Logged out successfully" });
 };
 

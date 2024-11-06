@@ -6,31 +6,45 @@ const recipeController = require("../controllers/recipeController");
 const verifyJWT = require("../middleware/verifyJWT");
 const uploadRecipeImg = require("../middleware/uploadRecipeImg");
 
+// Making the route private
 router.use(verifyJWT);
-// Create a new recipe with an image (Authenticated route)
+
+// @route post /recipes/create
+// @desc create a new recipe
+// @access Private
 router.post(
   "/create",
   uploadRecipeImg.single("image"),
   recipeController.createRecipe
 );
 
-// Update a recipe with a new image (if provided)
+// @route PATCH /recipes
+// @desc Update an existing recipe
+// @access Private
 router.patch(
   "/",
   uploadRecipeImg.single("image"),
   recipeController.updateRecipe
 );
 
-// Delete a recipe (Authenticated route)
+// @route delete /recipes
+// @desc Delete an existing recipe
+// @access Private
 router.delete("/", recipeController.deleteRecipe);
 
-// Get all recipes for a user (Authenticated route)
+// @route get /recipes
+// @desc get all recipes
+// @access Private
 router.get("/", recipeController.getAllRecipes);
 
-// Get a recipe from a URL (Authenticated route)
+// @route get /recipes/url
+// @desc extract a recipe from an url
+// @access Private
 router.get("/url", recipeController.getUrlRecipe);
 
-// Get one recipe by ID (Authenticated route)
+// @route get /recipes/:id
+// @desc get one recipe from its id
+// @access Private
 router.get("/:id", recipeController.getOneRecipe);
 
 module.exports = router;
