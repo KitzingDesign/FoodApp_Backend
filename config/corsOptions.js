@@ -9,7 +9,7 @@ const corsOptions = {
     }
   },
   credentials: true,
-  methods: "GET,POST,PUT,DELETE,PATCH, OPTION", // Add other HTTP methods if needed
+  methods: "GET,POST,PUT,DELETE,PATCH, OPTIONS", // Add other HTTP methods if needed
   allowedHeaders: ["Content-Type", "Authorization"], // Add any other headers you're using
   optionsSuccessStatus: 200,
 };
