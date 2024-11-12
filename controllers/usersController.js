@@ -64,11 +64,16 @@ const createNewUser = async (req, res) => {
     const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
     const uid = decodedToken.uid;
 
-    // Check if the user already exists
-    let user = await User.findOne({ where: { uid: uid } });
+    try {
+      let user = await User.findOne({ where: { uid: uid } });
+      if (user) return res.status(409).json({ message: "User already exists" });
 
-    if (user) {
-      return res.status(409).json({ message: "User already exists" });
+      console.log("User found:", user);
+    } catch (dbError) {
+      console.error("Error querying the database:", dbError);
+      res
+        .status(500)
+        .json({ message: "Database error", error: dbError.message });
     }
 
     // Create the user object without handling roles
@@ -111,7 +116,9 @@ const createNewUser = async (req, res) => {
     if (error.code === "auth/id-token-expired") {
       return res.status(401).json({ message: "Firebase token has expired" });
     }
-    res.status(500).json({ message: "Internal server error" });
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: error.message });
   }
 };
 
