@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const corsOptions = require("./config/corsOptions");
 const { sequelize, connectDB } = require("./config/db");
+
 const PORT = process.env.PORT || 3500;
 
 // Log the environment
@@ -17,6 +18,7 @@ console.log(process.env.NODE_ENV);
 connectDB();
 
 // Middleware
+app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
