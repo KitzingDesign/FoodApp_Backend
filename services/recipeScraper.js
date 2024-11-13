@@ -1,6 +1,5 @@
 const https = require("https");
 const cheerio = require("cheerio");
-const recipeDataScraper = require("recipe-data-scraper");
 
 // Function to extract JSON-LD data from the HTML
 function extractJsonLD(html) {
@@ -61,13 +60,6 @@ async function scrapeRecipe(url) {
     return recipe;
   } catch (error) {
     console.warn("Custom scraper failed:", error.message);
-    // Fallback to recipe-data-scraper
-    try {
-      const recipe = await recipeDataScraper(url);
-      return recipe;
-    } catch (err) {
-      throw new Error("Could not find recipe data from both sources.");
-    }
   }
 }
 
