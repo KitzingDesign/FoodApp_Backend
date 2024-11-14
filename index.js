@@ -11,6 +11,9 @@ const { sequelize, connectDB } = require("./config/db");
 
 const PORT = process.env.PORT || 3500;
 
+// Set trust proxy for production environments
+app.set("trust proxy", true);
+
 // Log the environment
 console.log(process.env.NODE_ENV);
 
