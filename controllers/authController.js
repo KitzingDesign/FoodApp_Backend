@@ -57,10 +57,7 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      domain:
-        process.env.NODE_ENV === "production"
-          ? "https://www.matmatmaten.com"
-          : undefined, // Use shared top-level domain in production
+
       maxAge: 7 * 24 * 60 * 60 * 1000, // cookie expiry: 7 days
     });
 
@@ -116,10 +113,6 @@ const googleLogin = async (req, res) => {
     res.cookie("jwt", refreshToken, {
       httpOnly: true, // Prevent access via JavaScript
       secure: process.env.NODE_ENV === "production", // Only send cookie over HTTPS in production
-      domain:
-        process.env.NODE_ENV === "production"
-          ? "https://www.matmatmaten.com"
-          : undefined, // Use shared top-level domain in production
 
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // Cookie is sent only on same-site requests
       maxAge: 7 * 24 * 60 * 60 * 1000, // Set cookie to expire in 7 days

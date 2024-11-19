@@ -106,10 +106,6 @@ const createNewUser = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      domain:
-        process.env.NODE_ENV === "production"
-          ? "https://www.matmatmaten.com"
-          : undefined, // Use shared top-level domain in production
 
       maxAge: 7 * 24 * 60 * 60 * 1000, // cookie expiry: 7 days
     });
