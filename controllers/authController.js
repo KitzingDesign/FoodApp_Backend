@@ -56,7 +56,7 @@ const login = async (req, res) => {
     res.cookie("jwt", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // cookie expiry: 7 days
     });
 
@@ -112,7 +112,7 @@ const googleLogin = async (req, res) => {
     res.cookie("jwt", refreshToken, {
       httpOnly: true, // Prevent access via JavaScript
       secure: process.env.NODE_ENV === "production", // Only send cookie over HTTPS in production
-      sameSite: "Lax", // Cookie is sent only on same-site requests
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // Cookie is sent only on same-site requests
       maxAge: 7 * 24 * 60 * 60 * 1000, // Set cookie to expire in 7 days
     });
 

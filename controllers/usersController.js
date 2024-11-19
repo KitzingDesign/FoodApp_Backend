@@ -60,7 +60,7 @@ const createNewUser = async (req, res) => {
   const { firebaseToken, first_name, last_name } = req.body;
 
   try {
-    // Verify the Firebase token
+    console.log("Verifying Firebase token...");
     const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
     const uid = decodedToken.uid;
 
@@ -68,6 +68,7 @@ const createNewUser = async (req, res) => {
     console.log("UID:", uid);
 
     try {
+      console.log("Checking if user exists...");
       let user = await User.findOne({ where: { uid: uid } });
       if (user) return res.status(409).json({ message: "User already exists" });
 
@@ -104,7 +105,7 @@ const createNewUser = async (req, res) => {
     res.cookie("jwt", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // cookie expiry: 7 days
     });
 
