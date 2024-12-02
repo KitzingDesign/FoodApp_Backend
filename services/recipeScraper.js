@@ -1,65 +1,122 @@
-const https = require("https");
+const puppeteer = require("puppeteer");
 const cheerio = require("cheerio");
 
-// Function to extract JSON-LD data from the HTML
+/**
+ * Extract JSON-LD data from rendered HTML
+ * @param {string} html - The fully-rendered HTML
+ * @returns {object|null} - JSON-LD object or null if not found
+ */
 function extractJsonLD(html) {
   const $ = cheerio.load(html);
-  const jsonLdScript = $('script[type="application/ld+json"]').html();
-  if (jsonLdScript) {
+  const scripts = $('script[type="application/ld+json"]');
+  let jsonLd = null;
+
+  scripts.each((_, element) => {
+    const scriptContent = $(element).html();
     try {
-      const jsonData = JSON.parse(jsonLdScript);
-      return jsonData;
+      const parsed = JSON.parse(scriptContent);
+
+      // Log all parsed JSON-LD for debugging
+      console.log("Found JSON-LD data:", parsed);
+
+      // Handle arrays and objects with multiple @types
+      if (Array.isArray(parsed)) {
+        const recipe = parsed.find((item) =>
+          Array.isArray(item["@type"])
+            ? item["@type"].includes("Recipe")
+            : item["@type"] === "Recipe"
+        );
+        if (recipe) {
+          jsonLd = recipe;
+          return false; // Break the loop
+        }
+      } else if (
+        Array.isArray(parsed["@type"]) &&
+        parsed["@type"].includes("Recipe")
+      ) {
+        jsonLd = parsed;
+        return false; // Break the loop
+      } else if (parsed["@type"] === "Recipe") {
+        jsonLd = parsed;
+        return false; // Break the loop
+      }
     } catch (error) {
-      console.error("Error parsing JSON-LD:", error);
-      return null;
+      console.error("Error parsing JSON-LD script:", error);
     }
-  }
-  return null;
-}
-
-// Function to scrape the recipe from a URL using your custom scraper
-function myScrapeRecipe(url) {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        let data = "";
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-        res.on("end", () => {
-          const jsonLdData = extractJsonLD(data);
-          if (jsonLdData) {
-            if (
-              jsonLdData["@type"] === "Recipe" ||
-              (Array.isArray(jsonLdData) &&
-                jsonLdData.some((item) => item["@type"] === "Recipe"))
-            ) {
-              const recipe = Array.isArray(jsonLdData)
-                ? jsonLdData.find((item) => item["@type"] === "Recipe")
-                : jsonLdData;
-              resolve(recipe);
-            } else {
-              reject("No recipe found in JSON-LD.");
-            }
-          } else {
-            reject("No JSON-LD found on the page.");
-          }
-        });
-      })
-      .on("error", (error) => {
-        reject(`Error fetching the recipe: ${error.message}`);
-      });
   });
+
+  return jsonLd;
 }
 
-// Unified scraping function that first tries your custom scraper and then falls back to recipe-data-scraper
+/**
+ * Parse recipe data from JSON-LD
+ * @param {object} jsonLd - JSON-LD data
+ * @returns {object} - Recipe details
+ */
+function parseRecipeFromJsonLd(jsonLd) {
+  if (!jsonLd) {
+    throw new Error("No recipe data found in JSON-LD.");
+  }
+
+  return {
+    name: jsonLd.name || "",
+    description: jsonLd.description || "No description provided",
+    ingredients: jsonLd.recipeIngredient || [],
+    instructions: jsonLd.recipeInstructions
+      ? jsonLd.recipeInstructions.map((step) =>
+          typeof step === "string" ? step : step.text
+        )
+      : [],
+    prepTime: jsonLd.prepTime || "",
+    cookTime: jsonLd.cookTime || "",
+    totalTime: jsonLd.totalTime || "",
+    servings: jsonLd.recipeYield || "", // Extract servings
+    image: jsonLd.image || "", // Extract image
+    nutrition: jsonLd.nutrition || {},
+  };
+}
+
+/**
+ * Fetch fully-rendered HTML using Puppeteer
+ * @param {string} url - URL to fetch
+ * @returns {string} - Fully-rendered HTML
+ */
+async function fetchRenderedHTML(url) {
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
+
+  try {
+    await page.goto(url, { waitUntil: "networkidle2" });
+    const content = await page.content();
+    await browser.close();
+    return content;
+  } catch (error) {
+    await browser.close();
+    throw new Error(`Failed to fetch rendered HTML: ${error.message}`);
+  }
+}
+
+/**
+ * Scrape a recipe from a URL
+ * @param {string} url - Recipe page URL
+ * @returns {object} - Scraped recipe data
+ */
 async function scrapeRecipe(url) {
   try {
-    // First, try to scrape using your custom method
-    const recipe = await myScrapeRecipe(url);
-    return recipe;
+    console.log(`Fetching and rendering HTML for: ${url}`);
+    const html = await fetchRenderedHTML(url);
+
+    console.log("Extracting JSON-LD data...");
+    const jsonLdData = extractJsonLD(html);
+
+    console.log("Parsing recipe data...");
+    const recipeData = parseRecipeFromJsonLd(jsonLdData);
+
+    console.log("Recipe scraped successfully!");
+    return recipeData;
   } catch (error) {
-    console.warn("Custom scraper failed:", error.message);
+    console.error("Error scraping recipe:", error.message);
+    throw error;
   }
 }
 
