@@ -82,11 +82,14 @@ function parseRecipeFromJsonLd(jsonLd) {
  * @returns {string} - Fully-rendered HTML
  */
 async function fetchRenderedHTML(url) {
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"], // Add flags for deployment compatibility
+  });
   const page = await browser.newPage();
 
   try {
-    await page.goto(url, { waitUntil: "networkidle2" });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
     const content = await page.content();
     await browser.close();
     return content;
