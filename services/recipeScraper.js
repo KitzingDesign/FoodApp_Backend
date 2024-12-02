@@ -1,9 +1,9 @@
-const puppeteer = require("puppeteer");
+const axios = require("axios");
 const cheerio = require("cheerio");
 
 /**
- * Extract JSON-LD data from rendered HTML
- * @param {string} html - The fully-rendered HTML
+ * Extract JSON-LD data from HTML
+ * @param {string} html - The HTML content
  * @returns {object|null} - JSON-LD object or null if not found
  */
 function extractJsonLD(html) {
@@ -77,25 +77,16 @@ function parseRecipeFromJsonLd(jsonLd) {
 }
 
 /**
- * Fetch fully-rendered HTML using Puppeteer
+ * Fetch HTML using axios
  * @param {string} url - URL to fetch
- * @returns {string} - Fully-rendered HTML
+ * @returns {string} - HTML content
  */
-async function fetchRenderedHTML(url) {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"], // Add flags for deployment compatibility
-  });
-  const page = await browser.newPage();
-
+async function fetchHtml(url) {
   try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
-    const content = await page.content();
-    await browser.close();
-    return content;
+    const response = await axios.get(url);
+    return response.data;
   } catch (error) {
-    await browser.close();
-    throw new Error(`Failed to fetch rendered HTML: ${error.message}`);
+    throw new Error(`Failed to fetch HTML: ${error.message}`);
   }
 }
 
@@ -106,8 +97,8 @@ async function fetchRenderedHTML(url) {
  */
 async function scrapeRecipe(url) {
   try {
-    console.log(`Fetching and rendering HTML for: ${url}`);
-    const html = await fetchRenderedHTML(url);
+    console.log(`Fetching HTML for: ${url}`);
+    const html = await fetchHtml(url);
 
     console.log("Extracting JSON-LD data...");
     const jsonLdData = extractJsonLD(html);
